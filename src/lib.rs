@@ -164,6 +164,7 @@ macro_rules! set_bits {
 
 /// BME280 errors
 #[cfg_attr(feature = "with_std", derive(Display))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub enum Error<E> {
     /// Failed to compensate a raw measurement
@@ -192,6 +193,30 @@ impl<E> Format for Error<E> {
             Error::Delay => write!(fmt, "Delay issue"),
         }
     }
+}
+
+impl<E> Clone for Error<E>
+where
+    E: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Error::CompensationFailed => Error::CompensationFailed,
+            Error::Bus(e) => Error::Bus(e.clone()),
+            Error::InvalidData => Error::InvalidData,
+            Error::NoCalibrationData => Error::NoCalibrationData,
+            Error::UnsupportedChip => Error::UnsupportedChip,
+            Error::Delay => Error::Delay,
+        }
+    }
+}
+
+#[cfg(feature = "postcard")]
+impl<E> postcard::experimental::max_size::MaxSize for Error<E>
+where
+    E: postcard::experimental::max_size::MaxSize,
+{
+    const POSTCARD_MAX_SIZE: usize = 1 + E::POSTCARD_MAX_SIZE;
 }
 
 #[cfg(feature = "with_std")]
@@ -356,7 +381,7 @@ struct CalibrationData {
 }
 
 /// Measurement data
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "with_defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Measurements<E> {
