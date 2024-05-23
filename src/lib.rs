@@ -161,7 +161,7 @@ macro_rules! set_bits {
 /// BME280 errors
 #[cfg_attr(feature = "with_std", derive(Display))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error<E> {
     /// Failed to compensate a raw measurement
     CompensationFailed,
