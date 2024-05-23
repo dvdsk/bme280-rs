@@ -98,7 +98,7 @@ where
     pub async fn measure<D: AsyncDelayNs>(
         &mut self,
         delay: &mut D,
-    ) -> Result<Measurements<SPIError<SPIE>>, Error<SPIError<SPIE>>> {
+    ) -> Result<Measurements, Error<SPIError<SPIE>>> {
         self.common.measure(delay).await
     }
 }

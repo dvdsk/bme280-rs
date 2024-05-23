@@ -73,14 +73,10 @@ pub mod spi;
 
 #[cfg(feature = "async")]
 use core::future::Future;
-use core::marker::PhantomData;
 #[cfg(feature = "sync")]
 use embedded_hal::delay::DelayNs;
 #[cfg(feature = "async")]
 use embedded_hal_async::delay::DelayNs as AsyncDelayNs;
-
-#[cfg(feature = "serde")]
-use serde::Serialize;
 
 #[cfg(feature = "with_defmt")]
 use defmt::{write, Format, Formatter};
@@ -164,7 +160,7 @@ macro_rules! set_bits {
 
 /// BME280 errors
 #[cfg_attr(feature = "with_std", derive(Display))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
 pub enum Error<E> {
     /// Failed to compensate a raw measurement
@@ -381,22 +377,20 @@ struct CalibrationData {
 }
 
 /// Measurement data
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "with_defmt", derive(defmt::Format))]
-#[derive(Debug)]
-pub struct Measurements<E> {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Measurements {
     /// temperature in degrees celsius
     pub temperature: f32,
     /// pressure in pascals
     pub pressure: f32,
     /// percent relative humidity (`0` with BMP280)
     pub humidity: f32,
-    #[cfg_attr(feature = "serde", serde(skip))]
-    _e: PhantomData<E>,
 }
 
-impl<E> Measurements<E> {
-    fn parse(
+impl Measurements {
+    fn parse<E>(
         data: [u8; BME280_P_T_H_DATA_LEN],
         calibration: &mut CalibrationData,
     ) -> Result<Self, Error<E>> {
@@ -422,11 +416,10 @@ impl<E> Measurements<E> {
             temperature,
             pressure,
             humidity,
-            _e: PhantomData,
         })
     }
 
-    fn compensate_temperature(
+    fn compensate_temperature<E>(
         uncompensated: u32,
         calibration: &mut CalibrationData,
     ) -> Result<f32, Error<E>> {
@@ -448,7 +441,7 @@ impl<E> Measurements<E> {
         Ok(temperature)
     }
 
-    fn compensate_pressure(
+    fn compensate_pressure<E>(
         uncompensated: u32,
         calibration: &mut CalibrationData,
     ) -> Result<f32, Error<E>> {
@@ -479,7 +472,7 @@ impl<E> Measurements<E> {
         Ok(pressure)
     }
 
-    fn compensate_humidity(
+    fn compensate_humidity<E>(
         uncompensated: u32,
         calibration: &mut CalibrationData,
     ) -> Result<f32, Error<E>> {
@@ -711,7 +704,7 @@ where
     async fn measure<D: AsyncDelayNs>(
         &mut self,
         delay: &mut D,
-    ) -> Result<Measurements<I::Error>, Error<I::Error>> {
+    ) -> Result<Measurements, Error<I::Error>> {
         self.forced(delay).await?;
         delay.delay_ms(40).await;
         let measurements = self.interface.read_data(BME280_DATA_ADDR).await?;

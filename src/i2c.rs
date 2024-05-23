@@ -103,7 +103,7 @@ where
     pub async fn measure<D: AsyncDelayNs>(
         &mut self,
         delay: &mut D,
-    ) -> Result<Measurements<I2C::Error>, Error<I2C::Error>> {
+    ) -> Result<Measurements, Error<I2C::Error>> {
         self.common.measure(delay).await
     }
 }
